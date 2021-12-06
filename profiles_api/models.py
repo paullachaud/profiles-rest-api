@@ -3,6 +3,10 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.auth.models import BaseUserManager
+from django.db.models.deletion import CASCADE
+from django.db.models.fields import CharField
+
+from django.utils.translation import gettext_lazy as _
 
 class UserProfileManager(BaseUserManager):
     """Manager for user profile"""
@@ -54,3 +58,75 @@ class UserProfile(AbstractBaseUser, PermissionsMixin):
         """Return string representation of user"""
         return self.email
 # Create your models here.
+
+class Goal(models.Model):
+    created = models.DateTimeField(auto_now_add = True)
+    deadline = models.DateTimeField()
+    name = models.CharField(max_length=126)
+    description = models.TextField(max_length=255)
+    # TODO: state { start current end }
+    # TODO: measures { list<habits>}
+
+
+
+
+class Habit(models.Model):
+    user = models.ForeignKey(UserProfile, related_name='habits', on_delete= CASCADE)
+    class Frequency(models.TextChoices):
+        HOURLY= 'Hourly'
+        DAILY = 'Daily'
+        WEEKLY = 'Weekly'
+        MONTHLY = 'Monthly'
+
+    created = models.DateTimeField(auto_now_add= True)
+    frequency = models.CharField(
+        max_length = 10,
+        choices= Frequency.choices,
+        default= Frequency.DAILY,
+    )
+    name = models.CharField(max_length=30)
+    # TODO: Category
+    # TODO: Quantity/Units/Duration
+    # TODO: streak
+    # TODO: Reminder
+    # TODO: When {time of day (morning, evening, afternoon, anytime), actual time}
+    # TODO: Excpected time
+
+    def __str__(self):
+        return self.name
+
+class HabitInstance(models.Model):
+
+    class Day(models.TextChoices):
+        MONDAY = 'Mon', _('Monday')
+        TUESDAY = 'Tue', _('Tuesday')
+        WEDNESDAY = 'Wed', _('Wednesday')
+        THURSDAY = 'Thur', _('Thursday')
+        FRIDAY = 'Fri', _('Friday')
+        SATURDAY = 'Sat', _('Saturday')
+        SUNDAY = 'Sun', _('Sunday')
+
+    class Status(models.IntegerChoices):
+        INCOMPLETE = 0
+        COMPLETE = 1
+        SKIPPED = 2
+
+    habit = models.ForeignKey(Habit, related_name='habit_instance', on_delete=models.CASCADE)
+    status = models.IntegerField(
+        choices= Status.choices,
+        default= Status.INCOMPLETE
+    )
+    day = models.CharField(
+        max_length= 4,
+        choices = Day.choices,
+        default= Day.MONDAY
+    )
+    # TODO: Time complete
+    note = CharField(max_length = 255)
+
+class Todo(models.Model):
+    title = models.CharField(max_length=40)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.title
